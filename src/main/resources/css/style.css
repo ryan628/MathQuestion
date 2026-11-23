@@ -165,9 +165,9 @@
     -fx-text-fill: #1860A8;
 }
 
-/* 数学符号与算式专用字体样式 (采用开源 STIX Two Math) */
+/* 数学符号与算式专用字体样式 (中小学试卷规范字体：Times New Roman + 微软雅黑) */
 .math-expression {
-    -fx-font-family: "STIX Two Math", "Cambria Math", "Times New Roman", "Microsoft YaHei", sans-serif;
+    -fx-font-family: "Times New Roman", "Microsoft YaHei", "SimSun", sans-serif;
     -fx-font-size: 15px;
-    -fx-font-weight: bold;
+    -fx-font-weight: normal;
 }

@@ -10,17 +10,25 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 /**
  * 原生 DOCX (OpenXML) 试卷与答案生成引擎 (支持单页与多页批量出题)
  * <p>
- * 遵循 ECMA-376 (ISO/IEC 29500) 标准，无需任何第三方庞大依赖，
- * 直接使用 Java 原生 ZipOutputStream 构建标准 DOCX 文档，
- * 完美支持 Microsoft Word、WPS Office 等办公软件打开与打印。
+ * 严格遵循国内中小学试卷印刷排版权威规范：
+ * - 标题：黑体 (SimHei)
+ * - 副标题与考生信息：宋体 (SimSun)
+ * - 算式数字、西文字母与符号：Times New Roman，正文字符：宋体 (SimSun)
+ * - 分数运算：采用 Office OpenXML 标准 OMML (m:oMath / m:f) 规范上下真分式排版
+ * - 乘方运算：右上角标准数学上标 (如 (-1)³、x²、2⁻¹)
+ * 完美支持 Microsoft Word、WPS Office 等办公软件高质量显示与打印。
  */
 public class DocxGenerator {
+
+    private static final Pattern FRACTION_PATTERN = Pattern.compile("([\\d\\w√±²³⁴⁵⁶⁷⁸⁹⁺⁻]+)/([\\d\\w²³⁴⁵⁶⁷⁸⁹⁺⁻]+)");
 
     /**
      * 生成口算题目 DOCX 文档 (单页便利重载)
@@ -114,6 +122,7 @@ public class DocxGenerator {
         StringBuilder sb = new StringBuilder();
         sb.append("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n");
         sb.append("<w:document xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\"\n");
+        sb.append("            xmlns:m=\"http://schemas.openxmlformats.org/officeDocument/2006/math\"\n");
         sb.append("            xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\">\n");
         sb.append("  <w:body>\n");
 
@@ -141,13 +150,13 @@ public class DocxGenerator {
             int titleBefore = isDense ? 40 : 100;
             int titleAfter = isDense ? 30 : 60;
             int subBefore = isDense ? 20 : 40;
-            int subAfter = isDense ? 40 : 100;
-            int infoAfter = isDense ? 80 : 200;
-            int trHeight = isDense ? 480 : 540;
+            int subAfter = isDense ? 30 : 80;
+            int infoAfter = isDense ? 50 : 120;
+            int trHeight = isDense ? 500 : 540;
             // 题目标题字号与算式字号适配 (19 half-points = 9.5pt 五号字，确保初中与小学较长算式 4 列绝不折行)
             int fontSize = isDense ? 19 : 22;
 
-            // 1. 主标题
+            // 1. 主标题 (SimHei)
             sb.append("    <w:p>\n");
             sb.append("      <w:pPr>\n");
             sb.append("        <w:jc w:val=\"center\"/>\n");
@@ -157,14 +166,14 @@ public class DocxGenerator {
             sb.append("        <w:rPr>\n");
             sb.append("          <w:rFonts w:ascii=\"SimHei\" w:eastAsia=\"SimHei\" w:hAnsi=\"SimHei\"/>\n");
             sb.append("          <w:b/>\n");
-            sb.append("          <w:sz w:val=\"34\"/>\n");
-            sb.append("          <w:szCs w:val=\"34\"/>\n");
+            sb.append("          <w:sz w:val=\"32\"/>\n");
+            sb.append("          <w:szCs w:val=\"32\"/>\n");
             sb.append("        </w:rPr>\n");
             sb.append("        <w:t>").append(escapeXml(mainTitle)).append("</w:t>\n");
             sb.append("      </w:r>\n");
             sb.append("    </w:p>\n");
 
-            // 2. 副标题
+            // 2. 副标题 (SimSun)
             if (subTitle != null && !subTitle.isEmpty()) {
                 sb.append("    <w:p>\n");
                 sb.append("      <w:pPr>\n");
@@ -175,33 +184,33 @@ public class DocxGenerator {
                 sb.append("        <w:rPr>\n");
                 sb.append("          <w:rFonts w:ascii=\"SimSun\" w:eastAsia=\"SimSun\" w:hAnsi=\"SimSun\"/>\n");
                 sb.append("          <w:b/>\n");
-                sb.append("          <w:sz w:val=\"24\"/>\n");
-                sb.append("          <w:szCs w:val=\"24\"/>\n");
+                sb.append("          <w:sz w:val=\"22\"/>\n");
+                sb.append("          <w:szCs w:val=\"22\"/>\n");
                 sb.append("        </w:rPr>\n");
                 sb.append("        <w:t>").append(escapeXml(subTitle)).append("</w:t>\n");
                 sb.append("      </w:r>\n");
                 sb.append("    </w:p>\n");
             }
 
-            // 3. 学生信息栏 (仅非答案试卷，或指定了 studentInfo 时显示)
+            // 3. 学生信息栏 (SimSun)
             if (studentInfo != null && !studentInfo.isEmpty()) {
                 sb.append("    <w:p>\n");
                 sb.append("      <w:pPr>\n");
                 sb.append("        <w:jc w:val=\"center\"/>\n");
-                sb.append("        <w:spacing w:before=\"30\" w:after=\"").append(infoAfter).append("\"/>\n");
+                sb.append("        <w:spacing w:before=\"20\" w:after=\"").append(infoAfter).append("\"/>\n");
                 sb.append("      </w:pPr>\n");
                 sb.append("      <w:r>\n");
                 sb.append("        <w:rPr>\n");
                 sb.append("          <w:rFonts w:ascii=\"SimSun\" w:eastAsia=\"SimSun\" w:hAnsi=\"SimSun\"/>\n");
-                sb.append("          <w:sz w:val=\"19\"/>\n");
-                sb.append("          <w:szCs w:val=\"19\"/>\n");
+                sb.append("          <w:sz w:val=\"18\"/>\n");
+                sb.append("          <w:szCs w:val=\"18\"/>\n");
                 sb.append("        </w:rPr>\n");
                 sb.append("        <w:t xml:space=\"preserve\">").append(escapeXml(studentInfo)).append("</w:t>\n");
                 sb.append("      </w:r>\n");
                 sb.append("    </w:p>\n");
             } else {
                 sb.append("    <w:p>\n");
-                sb.append("      <w:pPr><w:spacing w:before=\"20\" w:after=\"80\"/></w:pPr>\n");
+                sb.append("      <w:pPr><w:spacing w:before=\"20\" w:after=\"50\"/></w:pPr>\n");
                 sb.append("    </w:p>\n");
             }
 
@@ -218,12 +227,12 @@ public class DocxGenerator {
             sb.append("          <w:insideH w:val=\"none\"/>\n");
             sb.append("          <w:insideV w:val=\"none\"/>\n");
             sb.append("        </w:tblBorders>\n");
-            sb.append("        <w:tblCellMar>\n" +
-"          <w:top w:w=\"" + (isDense ? 30 : 60) + "\" w:type=\"dxa\"/>\n" +
-"          <w:bottom w:w=\"" + (isDense ? 30 : 60) + "\" w:type=\"dxa\"/>\n" +
-"          <w:left w:w=\"40\" w:type=\"dxa\"/>\n" +
-"          <w:right w:w=\"40\" w:type=\"dxa\"/>\n" +
-"        </w:tblCellMar>\n");
+            sb.append("        <w:tblCellMar>\n");
+            sb.append("          <w:top w:w=\"10\" w:type=\"dxa\"/>\n");
+            sb.append("          <w:bottom w:w=\"10\" w:type=\"dxa\"/>\n");
+            sb.append("          <w:left w:w=\"30\" w:type=\"dxa\"/>\n");
+            sb.append("          <w:right w:w=\"30\" w:type=\"dxa\"/>\n");
+            sb.append("        </w:tblCellMar>\n");
             sb.append("      </w:tblPr>\n");
             sb.append("      <w:tblGrid>\n");
             sb.append("        <w:gridCol w:w=\"2256\"/>\n");
@@ -254,18 +263,10 @@ public class DocxGenerator {
                 sb.append("            <w:pPr>\n");
                 sb.append("              <w:spacing w:before=\"0\" w:after=\"0\" w:line=\"240\" w:lineRule=\"auto\"/>\n");
                 sb.append("            </w:pPr>\n");
-                sb.append("            <w:r>\n");
-                sb.append("              <w:rPr>\n");
-                sb.append("                <w:rFonts w:ascii=\"STIX Two Math\" w:eastAsia=\"SimSun\" w:hAnsi=\"STIX Two Math\" w:cs=\"STIX Two Math\"/>\n");
-                sb.append("                <w:b/>\n");
-                sb.append("                <w:sz w:val=\"").append(fontSize).append("\"/>\n");
-                sb.append("                <w:szCs w:val=\"").append(fontSize).append("\"/>\n");
-                if (isAnswer) {
-                    sb.append("                <w:color w:val=\"B22222\"/>\n");
-                }
-                sb.append("              </w:rPr>\n");
-                sb.append("              <w:t xml:space=\"preserve\">").append(escapeXml(text)).append("</w:t>\n");
-                sb.append("            </w:r>\n");
+
+                // 规范排版：分数渲染为上下真分式 (OMML)，其余算式采用 Times New Roman + 宋体
+                buildCellMathXml(sb, text, fontSize, isAnswer);
+
                 sb.append("          </w:p>\n");
                 sb.append("        </w:tc>\n");
 
@@ -285,15 +286,77 @@ public class DocxGenerator {
             sb.append("    </w:tbl>\n");
         }
 
-        // 5. 页面设置：标准 A4 (11906 x 16838 twip)，上下 850 twip (约 15mm)，左右 1134 twip (约 20mm)
+        // 5. 页面设置：标准 A4 (11906 x 16838 twip)，上下 800 twip (约 14mm)，左右 1134 twip (约 20mm)
         sb.append("    <w:sectPr>\n");
         sb.append("      <w:pgSz w:w=\"11906\" w:h=\"16838\"/>\n");
-        sb.append("      <w:pgMar w:top=\"850\" w:right=\"1134\" w:bottom=\"850\" w:left=\"1134\" w:header=\"720\" w:footer=\"720\" w:gutter=\"0\"/>\n");
+        sb.append("      <w:pgMar w:top=\"800\" w:right=\"1134\" w:bottom=\"800\" w:left=\"1134\" w:header=\"720\" w:footer=\"720\" w:gutter=\"0\"/>\n");
         sb.append("    </w:sectPr>\n");
 
         sb.append("  </w:body>\n");
         sb.append("</w:document>\n");
         return sb.toString();
+    }
+
+    /**
+     * 构建表格单元格数学内容：支持分数上下真分式 (OMML) 与标准中考规范字体
+     */
+    public static void buildCellMathXml(StringBuilder sb, String text, int fontSize, boolean isAnswer) {
+        if (!text.contains("/")) {
+            // 普通算式，使用标准规范宋体 + Times New Roman (非加粗，工整清爽)
+            sb.append("            <w:r>\n");
+            sb.append("              <w:rPr>\n");
+            sb.append("                <w:rFonts w:ascii=\"Times New Roman\" w:eastAsia=\"SimSun\" w:hAnsi=\"Times New Roman\" w:cs=\"Times New Roman\"/>\n");
+            sb.append("                <w:sz w:val=\"").append(fontSize).append("\"/>\n");
+            sb.append("                <w:szCs w:val=\"").append(fontSize).append("\"/>\n");
+            if (isAnswer) {
+                sb.append("                <w:color w:val=\"B22222\"/>\n");
+            }
+            sb.append("              </w:rPr>\n");
+            sb.append("              <w:t xml:space=\"preserve\">").append(escapeXml(text)).append("</w:t>\n");
+            sb.append("            </w:r>\n");
+        } else {
+            // 包含分数的算式，构建 OMML 数学对象，真上下分式排版
+            sb.append("            <m:oMath>\n");
+            Matcher m = FRACTION_PATTERN.matcher(text);
+            int lastIdx = 0;
+            while (m.find()) {
+                if (m.start() > lastIdx) {
+                    String part = text.substring(lastIdx, m.start());
+                    appendOmmlRun(sb, part, fontSize, isAnswer);
+                }
+                String num = m.group(1);
+                String den = m.group(2);
+                sb.append("              <m:f>\n");
+                sb.append("                <m:fPr><m:type m:val=\"bar\"/></m:fPr>\n");
+                sb.append("                <m:num>\n");
+                appendOmmlRun(sb, num, fontSize - 1, isAnswer);
+                sb.append("                </m:num>\n");
+                sb.append("                <m:den>\n");
+                appendOmmlRun(sb, den, fontSize - 1, isAnswer);
+                sb.append("                </m:den>\n");
+                sb.append("              </m:f>\n");
+                lastIdx = m.end();
+            }
+            if (lastIdx < text.length()) {
+                String part = text.substring(lastIdx);
+                appendOmmlRun(sb, part, fontSize, isAnswer);
+            }
+            sb.append("            </m:oMath>\n");
+        }
+    }
+
+    private static void appendOmmlRun(StringBuilder sb, String text, int fontSize, boolean isAnswer) {
+        sb.append("              <m:r>\n");
+        sb.append("                <w:rPr>\n");
+        sb.append("                  <w:rFonts w:ascii=\"Times New Roman\" w:eastAsia=\"SimSun\" w:hAnsi=\"Times New Roman\" w:cs=\"Times New Roman\"/>\n");
+        sb.append("                  <w:sz w:val=\"").append(fontSize).append("\"/>\n");
+        sb.append("                  <w:szCs w:val=\"").append(fontSize).append("\"/>\n");
+        if (isAnswer) {
+            sb.append("                  <w:color w:val=\"B22222\"/>\n");
+        }
+        sb.append("                </w:rPr>\n");
+        sb.append("                <m:t xml:space=\"preserve\">").append(escapeXml(text)).append("</m:t>\n");
+        sb.append("              </m:r>\n");
     }
 
     private static String buildContentTypesXml() {
@@ -336,15 +399,15 @@ public class DocxGenerator {
                 "  <w:docDefaults>\n" +
                 "    <w:rPrDefault>\n" +
                 "      <w:rPr>\n" +
-                "        <w:rFonts w:ascii=\"STIX Two Math\" w:eastAsia=\"SimSun\" w:hAnsi=\"STIX Two Math\" w:cs=\"STIX Two Math\"/>\n" +
-                "        <w:sz w:val=\"24\"/>\n" +
-                "        <w:szCs w:val=\"24\"/>\n" +
+                "        <w:rFonts w:ascii=\"Times New Roman\" w:eastAsia=\"SimSun\" w:hAnsi=\"Times New Roman\" w:cs=\"Times New Roman\"/>\n" +
+                "        <w:sz w:val=\"20\"/>\n" +
+                "        <w:szCs w:val=\"20\"/>\n" +
                 "        <w:lang w:val=\"en-US\" w:eastAsia=\"zh-CN\" w:bidi=\"ar-SA\"/>\n" +
                 "      </w:rPr>\n" +
                 "    </w:rPrDefault>\n" +
                 "    <w:pPrDefault>\n" +
                 "      <w:pPr>\n" +
-                "        <w:spacing w:line=\"276\" w:lineRule=\"auto\"/>\n" +
+                "        <w:spacing w:line=\"240\" w:lineRule=\"auto\"/>\n" +
                 "      </w:pPr>\n" +
                 "    </w:pPrDefault>\n" +
                 "  </w:docDefaults>\n" +

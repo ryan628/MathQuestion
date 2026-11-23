@@ -34,4 +34,7 @@ TestFont*
 
 # Output directory generated at runtime
 output/
+dist/
+*.docx
+*.pdf
 .sdlc/

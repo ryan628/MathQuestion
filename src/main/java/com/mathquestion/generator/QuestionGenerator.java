@@ -1324,7 +1324,7 @@ public class QuestionGenerator {
         int base = -(2 + random.nextInt(3)); // -2, -3, -4
         int exp = 2 + random.nextInt(3);     // 2, 3, 4
         int res = (int) Math.pow(base, exp);
-        return new Question("(" + base + ")^" + exp + "＝", String.valueOf(res));
+        return new Question("(" + base + ")" + toSuperscript(exp) + "＝", String.valueOf(res));
     }
 
     private Question genG7T1_5() { // 合并同类项
@@ -1352,17 +1352,17 @@ public class QuestionGenerator {
         int m = 2 + random.nextInt(5);
         int n = 2 + random.nextInt(5);
         if (random.nextBoolean()) {
-            return new Question("a^" + m + "·a^" + n + "＝", "a^" + (m + n));
+            return new Question("a" + toSuperscript(m) + "·a" + toSuperscript(n) + "＝", "a" + toSuperscript(m + n));
         } else {
             int total = m + n;
-            return new Question("x^" + total + "÷x^" + m + "＝", "x^" + n);
+            return new Question("x" + toSuperscript(total) + "÷x" + toSuperscript(m) + "＝", "x" + toSuperscript(n));
         }
     }
 
     private Question genG7T2_2() { // 幂的乘方与积的乘方
         int m = 2 + random.nextInt(4);
         int n = 2 + random.nextInt(4);
-        return new Question("(a^" + m + ")^" + n + "＝", "a^" + (m * n));
+        return new Question("(a" + toSuperscript(m) + ")" + toSuperscript(n) + "＝", "a" + toSuperscript(m * n));
     }
 
     private Question genG7T2_3() { // 单项式乘除整式
@@ -1416,7 +1416,7 @@ public class QuestionGenerator {
         int base = 2 + random.nextInt(3);
         int exp = 1 + random.nextInt(3);
         int val = (int) Math.pow(base, exp);
-        return new Question(base + "^(-" + exp + ")＝", "1/" + val);
+        return new Question(base + toSuperscript("-" + exp) + "＝", "1/" + val);
     }
 
     private Question genG8T1_5() { // 零指数幂与乘方综合口算
@@ -1442,7 +1442,7 @@ public class QuestionGenerator {
             case 4 -> {
                 int exp = random.nextBoolean() ? 3 : 4;
                 int ans = (exp == 3) ? 0 : 2;
-                yield new Question("3⁰＋(-1)^" + exp + "＝", String.valueOf(ans));
+                yield new Question("3⁰＋(-1)" + toSuperscript(exp) + "＝", String.valueOf(ans));
             }
             default -> {
                 int b = 2 + random.nextInt(5);
@@ -1608,5 +1608,42 @@ public class QuestionGenerator {
             a = t;
         }
         return a;
+    }
+
+    /**
+     * 将数字或表达式字符串转为中小学规范数学上标字符，消除计算机程序员符号 ^
+     */
+    public static String toSuperscript(int n) {
+        return toSuperscript(String.valueOf(n));
+    }
+
+    public static String toSuperscript(String s) {
+        if (s == null) return "";
+        StringBuilder sb = new StringBuilder();
+        for (char c : s.toCharArray()) {
+            sb.append(switch (c) {
+                case '0' -> '⁰';
+                case '1' -> '¹';
+                case '2' -> '²';
+                case '3' -> '³';
+                case '4' -> '⁴';
+                case '5' -> '⁵';
+                case '6' -> '⁶';
+                case '7' -> '⁷';
+                case '8' -> '⁸';
+                case '9' -> '⁹';
+                case '+' -> '⁺';
+                case '-' -> '⁻';
+                case '(' -> '⁽';
+                case ')' -> '⁾';
+                case 'm' -> 'ᵐ';
+                case 'n' -> 'ⁿ';
+                case 'x' -> 'ˣ';
+                case 'y' -> 'ʸ';
+                case '^' -> ""; // 滤除代码字符 ^
+                default -> c;
+            });
+        }
+        return sb.toString();
     }
 }

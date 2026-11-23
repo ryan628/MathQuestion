@@ -7,6 +7,7 @@ import com.mathquestion.model.Question;
 import com.mathquestion.model.QuestionType;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.*;
@@ -20,6 +21,8 @@ import java.awt.Desktop;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * 主界面控制与视图流转
@@ -637,10 +640,12 @@ public class MainView extends BorderPane {
         dialog.showAndWait();
     }
 
+    private static final Pattern FRACTION_PATTERN = Pattern.compile("([\\d\\w√±²³⁴⁵⁶⁷⁸⁹⁺⁻]+)/([\\d\\w²³⁴⁵⁶⁷⁸⁹⁺⁻]+)");
+
     private GridPane buildPreviewGrid(List<Question> questions, boolean showAnswer) {
         GridPane grid = new GridPane();
-        grid.setHgap(16);
-        grid.setVgap(10);
+        grid.setHgap(18);
+        grid.setVgap(12);
         grid.setPadding(new Insets(15));
         grid.setStyle("-fx-background-color: #FFFFFF;");
 
@@ -648,12 +653,67 @@ public class MainView extends BorderPane {
         for (int i = 0; i < questions.size(); i++) {
             Question q = questions.get(i);
             String text = showAnswer ? q.getFullEquation() : q.getExpression();
-            Label lbl = new Label(text);
-            lbl.getStyleClass().add("math-expression");
-            lbl.setStyle("-fx-font-family: 'STIX Two Math', 'Cambria Math', 'Microsoft YaHei', sans-serif; -fx-font-size: 14.5px; -fx-font-weight: bold; " + (showAnswer ? "-fx-text-fill: #C00000;" : "-fx-text-fill: #111111;"));
-            grid.add(lbl, i % cols, i / cols);
+            Node node = buildMathPreviewNode(text, showAnswer);
+            grid.add(node, i % cols, i / cols);
         }
         return grid;
+    }
+
+    private Node buildMathPreviewNode(String text, boolean showAnswer) {
+        String textColor = showAnswer ? "#C00000" : "#111111";
+
+        if (!text.contains("/")) {
+            Label lbl = new Label(text);
+            lbl.getStyleClass().add("math-expression");
+            lbl.setStyle("-fx-font-family: 'Times New Roman', 'Microsoft YaHei', 'SimSun', sans-serif; -fx-font-size: 15px; -fx-font-weight: normal; -fx-text-fill: " + textColor + ";");
+            return lbl;
+        }
+
+        HBox box = new HBox(1);
+        box.setAlignment(Pos.CENTER_LEFT);
+
+        Matcher m = FRACTION_PATTERN.matcher(text);
+        int lastIdx = 0;
+        while (m.find()) {
+            if (m.start() > lastIdx) {
+                String part = text.substring(lastIdx, m.start());
+                Label partLbl = new Label(part);
+                partLbl.setStyle("-fx-font-family: 'Times New Roman', 'Microsoft YaHei', 'SimSun', sans-serif; -fx-font-size: 15px; -fx-font-weight: normal; -fx-text-fill: " + textColor + ";");
+                box.getChildren().add(partLbl);
+            }
+
+            String num = m.group(1);
+            String den = m.group(2);
+
+            VBox fracBox = new VBox(1);
+            fracBox.setAlignment(Pos.CENTER);
+
+            Label numLbl = new Label(num);
+            numLbl.setStyle("-fx-font-family: 'Times New Roman', 'Microsoft YaHei', 'SimSun', sans-serif; -fx-font-size: 11px; -fx-font-weight: normal; -fx-text-fill: " + textColor + "; -fx-padding: 0 2 0 2;");
+
+            Region line = new Region();
+            line.setStyle("-fx-background-color: " + textColor + "; -fx-min-height: 1.2px; -fx-pref-height: 1.2px; -fx-max-height: 1.2px;");
+            int lineW = Math.max(num.length(), den.length()) * 8 + 4;
+            line.setMinWidth(lineW);
+            line.setPrefWidth(lineW);
+
+            Label denLbl = new Label(den);
+            denLbl.setStyle("-fx-font-family: 'Times New Roman', 'Microsoft YaHei', 'SimSun', sans-serif; -fx-font-size: 11px; -fx-font-weight: normal; -fx-text-fill: " + textColor + "; -fx-padding: 0 2 0 2;");
+
+            fracBox.getChildren().addAll(numLbl, line, denLbl);
+            box.getChildren().add(fracBox);
+
+            lastIdx = m.end();
+        }
+
+        if (lastIdx < text.length()) {
+            String part = text.substring(lastIdx);
+            Label partLbl = new Label(part);
+            partLbl.setStyle("-fx-font-family: 'Times New Roman', 'Microsoft YaHei', 'SimSun', sans-serif; -fx-font-size: 15px; -fx-font-weight: normal; -fx-text-fill: " + textColor + ";");
+            box.getChildren().add(partLbl);
+        }
+
+        return box;
     }
 
     private void switchView(Region newView) {

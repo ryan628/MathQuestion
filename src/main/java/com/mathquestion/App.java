@@ -16,7 +16,6 @@ public class App extends Application {
     public void start(Stage primaryStage) {
         try {
             System.out.println("App.start called, initializing MainView...");
-            initMathFonts();
 
             // 设置程序窗口与任务栏图标
             try {
@@ -77,22 +76,6 @@ public class App extends Application {
             }
         } catch (Throwable t) {
             t.printStackTrace();
-        }
-    }
-
-    private void initMathFonts() {
-        try {
-            var fontStream = getClass().getResourceAsStream("/fonts/STIXTwoMath-Regular.ttf");
-            if (fontStream != null) {
-                javafx.scene.text.Font loadedFont = javafx.scene.text.Font.loadFont(fontStream, 14);
-                if (loadedFont != null) {
-                    System.out.println("Loaded free math font: " + loadedFont.getName() + " (" + loadedFont.getFamily() + ")");
-                }
-            } else {
-                System.err.println("Math font resource not found: /fonts/STIXTwoMath-Regular.ttf");
-            }
-        } catch (Exception e) {
-            System.err.println("Failed to load math font: " + e.getMessage());
         }
     }
 

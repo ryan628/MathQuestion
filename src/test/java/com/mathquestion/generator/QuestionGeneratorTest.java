@@ -93,6 +93,26 @@ public class QuestionGeneratorTest {
     }
 
     @Test
+    public void testNoCaretInExponentsAndSuperscriptFormat() {
+        // 重点测试七、八、九年级包含幂运算的题型，绝对不应出现程序员计算机符号 ^
+        QuestionType[] powerTypes = {
+                QuestionType.G7T1_4, // 有理数乘方
+                QuestionType.G7T2_1, // 同底数幂乘除
+                QuestionType.G7T2_2, // 幂的乘方
+                QuestionType.G8T1_4, // 负整数指数幂
+                QuestionType.G8T1_5  // 零指数幂综合
+        };
+
+        for (QuestionType qt : powerTypes) {
+            List<Question> questions = generator.generateBatch(qt, 50);
+            for (Question q : questions) {
+                assertFalse(q.getExpression().contains("^"), "算式中严禁包含程序员代码字符 ^，必须使用标准上标: " + q.getExpression());
+                assertFalse(q.getAnswer().contains("^"), "答案中严禁包含程序员代码字符 ^，必须使用标准上标: " + q.getAnswer());
+            }
+        }
+    }
+
+    @Test
     public void testMultiPageExporterMiddleSchool(@TempDir Path tempDir) throws IOException {
         File dir = tempDir.toFile();
         List<List<Question>> pages = new java.util.ArrayList<>();

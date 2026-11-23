@@ -50,11 +50,16 @@ public class AllFeaturesVerificationTest {
     public void testDocxSinglePageStrictConstraint(@TempDir Path tempDir) throws IOException {
         File dir = tempDir.toFile();
 
-        // 重点测试包含较长复杂算式的初中题型 (零指数幂、二次根式、特殊角三角函数、一元二次方程)
+        // 重点测试包含分数（真上下分式排版）和初中幂运算的题型
         QuestionType[] testTypes = {
-                QuestionType.G8T1_5, // 零指数幂与乘方综合 (用户重点反馈的题型)
+                QuestionType.G3T2_1, // 同分母分数加减法
+                QuestionType.G5T2_1, // 异分母分数加减法
+                QuestionType.G6T1_1, // 分数乘法
+                QuestionType.G6T1_2, // 分数除法
+                QuestionType.G7T2_1, // 同底数幂乘除
+                QuestionType.G8T1_4, // 负整数指数幂
+                QuestionType.G8T1_5, // 零指数幂与乘方综合
                 QuestionType.G8T2_3, // 二次根式加减
-                QuestionType.G7T2_5, // 完全平方公式
                 QuestionType.G9T2_3  // 中考代数计算综合
         };
 
@@ -62,8 +67,13 @@ public class AllFeaturesVerificationTest {
             List<Question> questions = generator.generateBatch(qt, 100);
             File docx = new File(dir, "test_" + qt.name() + ".docx");
             DocxGenerator.generateQuestionDocx(docx, qt.getGrade(), qt, questions);
-            assertTrue(docx.exists());
+            assertTrue(docx.exists(), "DOCX 文件应生成成功: " + docx.getName());
             assertTrue(docx.length() > 2000, "DOCX 文件大小应正常: " + docx.length());
+
+            // 验证生成答案文档
+            File ansDocx = new File(dir, "test_" + qt.name() + "_ans.docx");
+            DocxGenerator.generateAnswerDocx(ansDocx, qt.getGrade(), qt, questions);
+            assertTrue(ansDocx.exists(), "答案 DOCX 应生成成功");
         }
     }
 }
