@@ -30,15 +30,41 @@ public class MainView extends BorderPane {
     private final QuestionGenerator generator;
 
     public static final String APP_TITLE = "中小学数学口算题出题系统 (苏教版 1-9年级)";
+    private static final String PREF_KEY_OUTPUT_DIR = "custom_output_dir";
 
     // 当前选中的状态
     private Grade selectedGrade;
     private QuestionType selectedType;
     private int questionsPerPage = 100; // 默认 100 题
     private int pageCount = 1;          // 默认 1 页
-    private File outputDirectory = new File(Exporter.DEFAULT_EXPORT_DIR);
+    private File outputDirectory = loadSavedOutputDirectory();
     private List<List<Question>> lastGeneratedPages;
     private Exporter.ExportResult lastExportResult;
+
+    private static File loadSavedOutputDirectory() {
+        try {
+            java.util.prefs.Preferences prefs = java.util.prefs.Preferences.userNodeForPackage(MainView.class);
+            String saved = prefs.get(PREF_KEY_OUTPUT_DIR, null);
+            if (saved != null && !saved.trim().isEmpty()) {
+                File dir = new File(saved.trim());
+                if (dir.exists() || dir.mkdirs()) {
+                    return dir;
+                }
+            }
+        } catch (Exception ignored) {
+        }
+        return new File(Exporter.DEFAULT_EXPORT_DIR);
+    }
+
+    private static void saveOutputDirectory(File dir) {
+        if (dir == null) return;
+        try {
+            java.util.prefs.Preferences prefs = java.util.prefs.Preferences.userNodeForPackage(MainView.class);
+            prefs.put(PREF_KEY_OUTPUT_DIR, dir.getAbsolutePath());
+            prefs.flush();
+        } catch (Exception ignored) {
+        }
+    }
 
     // 界面容器
     private final StackPane contentStack;
@@ -338,6 +364,7 @@ public class MainView extends BorderPane {
             File chosen = chooser.showDialog(primaryStage);
             if (chosen != null) {
                 outputDirectory = chosen;
+                saveOutputDirectory(chosen);
                 dirLabel.setText("保存路径: " + outputDirectory.getAbsolutePath());
             }
         });

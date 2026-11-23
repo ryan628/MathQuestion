@@ -138,13 +138,14 @@ public class DocxGenerator {
 
             // 根据每页题目数自适应排版高度与字号
             boolean isDense = qCount >= 80; // 80~100 题启用紧凑精美排版，确保 25 行优雅容纳在整整 1 页 A4 内
-            int titleBefore = isDense ? 60 : 120;
-            int titleAfter = isDense ? 40 : 80;
+            int titleBefore = isDense ? 40 : 100;
+            int titleAfter = isDense ? 30 : 60;
             int subBefore = isDense ? 20 : 40;
-            int subAfter = isDense ? 60 : 140;
-            int infoAfter = isDense ? 100 : 260;
-            int trHeight = isDense ? 390 : 540;
-            int fontSize = isDense ? 24 : 28; // 24 half-points = 12pt (小四), 28 = 14pt (四号)
+            int subAfter = isDense ? 40 : 100;
+            int infoAfter = isDense ? 80 : 200;
+            int trHeight = isDense ? 480 : 540;
+            // 题目标题字号与算式字号适配 (19 half-points = 9.5pt 五号字，确保初中与小学较长算式 4 列绝不折行)
+            int fontSize = isDense ? 19 : 22;
 
             // 1. 主标题
             sb.append("    <w:p>\n");
@@ -217,12 +218,12 @@ public class DocxGenerator {
             sb.append("          <w:insideH w:val=\"none\"/>\n");
             sb.append("          <w:insideV w:val=\"none\"/>\n");
             sb.append("        </w:tblBorders>\n");
-            sb.append("        <w:tblCellMar>\n");
-            sb.append("          <w:top w:w=\"").append(isDense ? 40 : 80).append("\" w:type=\"dxa\"/>\n");
-            sb.append("          <w:bottom w:w=\"").append(isDense ? 40 : 80).append("\" w:type=\"dxa\"/>\n");
-            sb.append("          <w:left w:w=\"100\" w:type=\"dxa\"/>\n");
-            sb.append("          <w:right w:w=\"100\" w:type=\"dxa\"/>\n");
-            sb.append("        </w:tblCellMar>\n");
+            sb.append("        <w:tblCellMar>\n" +
+"          <w:top w:w=\"" + (isDense ? 30 : 60) + "\" w:type=\"dxa\"/>\n" +
+"          <w:bottom w:w=\"" + (isDense ? 30 : 60) + "\" w:type=\"dxa\"/>\n" +
+"          <w:left w:w=\"40\" w:type=\"dxa\"/>\n" +
+"          <w:right w:w=\"40\" w:type=\"dxa\"/>\n" +
+"        </w:tblCellMar>\n");
             sb.append("      </w:tblPr>\n");
             sb.append("      <w:tblGrid>\n");
             sb.append("        <w:gridCol w:w=\"2256\"/>\n");
@@ -236,7 +237,7 @@ public class DocxGenerator {
                 if (i % colCount == 0) {
                     sb.append("      <w:tr>\n");
                     sb.append("        <w:trPr>\n");
-                    sb.append("          <w:trHeight w:val=\"").append(trHeight).append("\" w:hRule=\"atLeast\"/>\n");
+                    sb.append("          <w:trHeight w:val=\"").append(trHeight).append("\" w:hRule=\"exact\"/>\n");
                     sb.append("        </w:trPr>\n");
                 }
 
@@ -247,6 +248,7 @@ public class DocxGenerator {
                 sb.append("          <w:tcPr>\n");
                 sb.append("            <w:tcW w:w=\"2256\" w:type=\"dxa\"/>\n");
                 sb.append("            <w:vAlign w:val=\"center\"/>\n");
+                sb.append("            <w:noWrap/>\n");
                 sb.append("          </w:tcPr>\n");
                 sb.append("          <w:p>\n");
                 sb.append("            <w:pPr>\n");
@@ -271,7 +273,7 @@ public class DocxGenerator {
                     if (i == qCount - 1 && i % colCount != colCount - 1) {
                         for (int fill = 0; fill < (colCount - 1 - (i % colCount)); fill++) {
                             sb.append("        <w:tc>\n");
-                            sb.append("          <w:tcPr><w:tcW w:w=\"2256\" w:type=\"dxa\"/></w:tcPr>\n");
+                            sb.append("          <w:tcPr><w:tcW w:w=\"2256\" w:type=\"dxa\"/><w:noWrap/></w:tcPr>\n");
                             sb.append("          <w:p/>\n");
                             sb.append("        </w:tc>\n");
                         }

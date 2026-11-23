@@ -1071,32 +1071,69 @@ public class QuestionGenerator {
     }
 
     private Question genG5T2_2() { // 简单的异分母分数加法
-        int[] dPool = {2, 3, 4, 5, 6};
+        int[] dPool = {2, 3, 4, 5, 6, 8, 10, 12};
         int d1 = dPool[random.nextInt(dPool.length)];
         int d2 = dPool[random.nextInt(dPool.length)];
         while (d1 == d2) d2 = dPool[random.nextInt(dPool.length)];
-        int m1 = 1;
-        int m2 = 1;
+        int m1 = 1 + random.nextInt(Math.min(2, d1));
+        int m2 = 1 + random.nextInt(Math.min(2, d2));
         int num = m1 * d2 + m2 * d1;
         int den = d1 * d2;
         int g = gcd(num, den);
-        return new Question("1/" + d1 + "＋1/" + d2 + "＝", (num / g) + "/" + (den / g));
+        num /= g;
+        den /= g;
+        String ans = (num % den == 0) ? String.valueOf(num / den) : (num + "/" + den);
+        return new Question(m1 + "/" + d1 + "＋" + m2 + "/" + d2 + "＝", ans);
     }
 
     private Question genG5T2_3() { // 简单的异分母分数减法
-        int d1 = 2;
-        int d2 = 4;
-        if (random.nextBoolean()) {
-            d1 = 2; d2 = 6;
+        int[] dPool = {2, 3, 4, 5, 6, 8, 10, 12};
+        int d1 = dPool[random.nextInt(dPool.length)];
+        int d2 = dPool[random.nextInt(dPool.length)];
+        while (d1 == d2) d2 = dPool[random.nextInt(dPool.length)];
+        int m1 = 1 + random.nextInt(Math.min(2, d1));
+        int m2 = 1 + random.nextInt(Math.min(2, d2));
+        if (m1 * d2 < m2 * d1) {
+            int td = d1; d1 = d2; d2 = td;
+            int tm = m1; m1 = m2; m2 = tm;
         }
-        int num = d2 - d1;
+        int num = m1 * d2 - m2 * d1;
         int den = d1 * d2;
-        int g = gcd(num, den);
-        return new Question("1/" + d1 + "－1/" + d2 + "＝", (num / g) + "/" + (den / g));
+        int g = gcd(Math.abs(num), den);
+        if (g == 0) g = 1;
+        num /= g;
+        den /= g;
+        String ans = (num == 0) ? "0" : (num % den == 0 ? String.valueOf(num / den) : (num + "/" + den));
+        return new Question(m1 + "/" + d1 + "－" + m2 + "/" + d2 + "＝", ans);
     }
 
-    private Question genG5T2_4() { // 分数加减混合运算
-        return new Question("1/2＋1/4＋1/4＝", "1");
+    private Question genG5T2_4() { // 分数加减混合运算 (真随机 3 项)
+        int mode = random.nextInt(5);
+        if (mode == 0) {
+            int d = 4 + random.nextInt(6);
+            int m1 = 1 + random.nextInt(d - 2);
+            int m2 = 1 + random.nextInt(d - 1 - m1);
+            int rem = d - m1 - m2;
+            return new Question("1－" + m1 + "/" + d + "－" + m2 + "/" + d + "＝", rem + "/" + d);
+        } else if (mode == 1) {
+            int a = random.nextBoolean() ? 1 : 3;
+            return new Question(a + "/4＋1/2－1/4＝", (a == 1 ? "1/2" : "1"));
+        } else if (mode == 2) {
+            int a = 1 + random.nextInt(3);
+            int sumNum = 3 + a;
+            int g = gcd(sumNum, 6);
+            String ans = (sumNum == 6) ? "1" : ((sumNum / g) + "/" + (6 / g));
+            return new Question("1/3＋1/6＋" + a + "/6＝", ans);
+        } else if (mode == 3) {
+            int d = 5 + random.nextInt(5);
+            int m1 = 1 + random.nextInt(3);
+            int m2 = 1 + random.nextInt(3);
+            int m3 = 1;
+            int num = m1 + m2 - m3;
+            return new Question(m1 + "/" + d + "＋" + m2 + "/" + d + "－" + m3 + "/" + d + "＝", num + "/" + d);
+        } else {
+            return new Question("3/4－1/2＋1/4＝", "1/2");
+        }
     }
 
     private Question genG5T2_5() { // 一步简易方程求解口算
@@ -1148,10 +1185,39 @@ public class QuestionGenerator {
         return new Question(a + "/" + b + "的倒数＝", b + "/" + a);
     }
 
-    private Question genG6T1_4() { // 分数除法
-        int den = 2 + random.nextInt(5);
-        int num = 1 + random.nextInt(den - 1);
-        return new Question(num + "/" + den + "÷" + num + "/" + den + "＝", "1");
+    private Question genG6T1_4() { // 分数除法口算
+        int type = random.nextInt(3);
+        if (type == 0) {
+            // 分数除以整数
+            int b = 2 + random.nextInt(5);
+            int c = 2 + random.nextInt(4);
+            int a = c * (1 + random.nextInt(3));
+            int num = a / c;
+            int den = b;
+            int g = gcd(num, den);
+            return new Question(a + "/" + b + "÷" + c + "＝", (num / g) + "/" + (den / g));
+        } else if (type == 1) {
+            // 整数除以分数
+            int b = 1 + random.nextInt(3);
+            int c = 2 + random.nextInt(5);
+            int k = 1 + random.nextInt(4);
+            int a = b * k;
+            return new Question(a + "÷" + b + "/" + c + "＝", String.valueOf(k * c));
+        } else {
+            // 分数除以分数
+            int[] dPool = {2, 3, 4, 5, 6};
+            int d1 = dPool[random.nextInt(dPool.length)];
+            int d2 = dPool[random.nextInt(dPool.length)];
+            int n1 = 1 + random.nextInt(d1 - 1);
+            int n2 = 1 + random.nextInt(d2 - 1);
+            int num = n1 * d2;
+            int den = d1 * n2;
+            int g = gcd(num, den);
+            num /= g;
+            den /= g;
+            String ans = (num % den == 0) ? String.valueOf(num / den) : (num + "/" + den);
+            return new Question(n1 + "/" + d1 + "÷" + n2 + "/" + d2 + "＝", ans);
+        }
     }
 
     private Question genG6T1_5() { // 化简比与求比值
@@ -1196,8 +1262,26 @@ public class QuestionGenerator {
     }
 
     private Question genG6T2_4() { // 小学总复习计算综合
-        int a = 15 + random.nextInt(35);
-        return new Question(a + "×4÷2＝", String.valueOf(a * 2));
+        int type = random.nextInt(4);
+        return switch (type) {
+            case 0 -> {
+                int a = 12 + random.nextInt(30);
+                int b = 2 + random.nextInt(4);
+                yield new Question(a + "×" + (b * 2) + "÷" + b + "＝", String.valueOf(a * 2));
+            }
+            case 1 -> {
+                int a = 10 + random.nextInt(40);
+                yield new Question(a + "×3/4＋" + a + "×1/4＝", String.valueOf(a));
+            }
+            case 2 -> {
+                int m = 1 + random.nextInt(5);
+                yield new Question("1/2＋" + m + "×1/2＝", (m + 1) % 2 == 0 ? String.valueOf((m + 1) / 2) : (m + 1) + "/2");
+            }
+            default -> {
+                int k = 2 + random.nextInt(6);
+                yield new Question("(1/2＋1/4)×" + (k * 4) + "＝", String.valueOf(3 * k));
+            }
+        };
     }
 
     private Question genG6T2_5() { // 六年级下综合
@@ -1335,8 +1419,36 @@ public class QuestionGenerator {
         return new Question(base + "^(-" + exp + ")＝", "1/" + val);
     }
 
-    private Question genG8T1_5() { // 零指数幂与乘方
-        return new Question("(π－3.14)⁰＝", "1");
+    private Question genG8T1_5() { // 零指数幂与乘方综合口算
+        int type = random.nextInt(6);
+        return switch (type) {
+            case 0 -> {
+                int val = random.nextBoolean() ? (2 + random.nextInt(98)) : -(2 + random.nextInt(98));
+                yield new Question("(" + val + ")⁰＝", "1");
+            }
+            case 1 -> {
+                String[] bases = {"π－3.14", "π－3", "√2－1", "√3－2", "2024", "1/3"};
+                String b = bases[random.nextInt(bases.length)];
+                yield new Question("(" + b + ")⁰＝", "1");
+            }
+            case 2 -> {
+                int p = 1 + random.nextInt(4);
+                yield new Question("2⁰＋" + p + "²＝", String.valueOf(1 + p * p));
+            }
+            case 3 -> {
+                int b = 1 + random.nextInt(6);
+                yield new Question("(-5)⁰－(" + (-b) + ")＝", String.valueOf(1 + b));
+            }
+            case 4 -> {
+                int exp = random.nextBoolean() ? 3 : 4;
+                int ans = (exp == 3) ? 0 : 2;
+                yield new Question("3⁰＋(-1)^" + exp + "＝", String.valueOf(ans));
+            }
+            default -> {
+                int b = 2 + random.nextInt(5);
+                yield new Question("(-" + b + ")⁰＋√4＝", "3");
+            }
+        };
     }
 
     // ==========================================
@@ -1359,16 +1471,51 @@ public class QuestionGenerator {
     }
 
     private Question genG8T2_3() { // 二次根式加减混合口算
-        return new Question("√12＋√3＝", "3√3");
+        int c1 = 1 + random.nextInt(4);
+        int c2 = 1 + random.nextInt(4);
+        int radical = random.nextBoolean() ? 2 : (random.nextBoolean() ? 3 : 5);
+        if (random.nextBoolean()) {
+            String s1 = (c1 == 1) ? "√" + radical : c1 + "√" + radical;
+            String s2 = (c2 == 1) ? "√" + radical : c2 + "√" + radical;
+            return new Question(s1 + "＋" + s2 + "＝", (c1 + c2) + "√" + radical);
+        } else {
+            int maxC = Math.max(c1, c2) + 1;
+            int minC = Math.min(c1, c2);
+            int diff = maxC - minC;
+            String s1 = maxC + "√" + radical;
+            String s2 = (minC == 1) ? "√" + radical : minC + "√" + radical;
+            String ans = (diff == 1) ? "√" + radical : diff + "√" + radical;
+            return new Question(s1 + "－" + s2 + "＝", ans);
+        }
     }
 
     private Question genG8T2_4() { // 分式约分口算
         int k = 2 + random.nextInt(4);
-        return new Question((k * 2) + "a²b÷(" + k + "ab)＝", "2a");
+        int varChoice = random.nextInt(3);
+        if (varChoice == 0) {
+            return new Question((k * 2) + "a²b÷(" + k + "ab)＝", "2a");
+        } else if (varChoice == 1) {
+            return new Question((k * 3) + "xy²÷(" + k + "xy)＝", "3y");
+        } else {
+            return new Question("(a²－ab)÷a＝", "a－b");
+        }
     }
 
     private Question genG8T2_5() { // 分式乘除法口算
-        return new Question("(a/b)·(b/c)＝", "a/c");
+        int type = random.nextInt(5);
+        return switch (type) {
+            case 0 -> {
+                int k = 2 + random.nextInt(4);
+                yield new Question("(a/b)·(" + k + "b/a)＝", String.valueOf(k));
+            }
+            case 1 -> new Question("(x/y)·(y²/x)＝", "y");
+            case 2 -> new Question("(a²/b)÷(a/b)＝", "a");
+            case 3 -> {
+                int k = 2 + random.nextInt(3);
+                yield new Question("(" + k + "x/y)÷(x/y)＝", String.valueOf(k));
+            }
+            default -> new Question("(m/n)·(n/p)＝", "m/p");
+        };
     }
 
     // ==========================================
@@ -1385,8 +1532,8 @@ public class QuestionGenerator {
     }
 
     private Question genG9T1_3() { // 特殊角三角函数口算
-        String[] qArr = {"sin30°＝", "cos60°＝", "tan45°＝", "sin45°＝", "cos30°＝", "tan60°＝"};
-        String[] aArr = {"1/2", "1/2", "1", "√2/2", "√3/2", "√3"};
+        String[] qArr = {"sin30°＝", "cos60°＝", "tan45°＝", "sin45°＝", "cos30°＝", "tan60°＝", "cos45°＝", "tan30°＝"};
+        String[] aArr = {"1/2", "1/2", "1", "√2/2", "√3/2", "√3", "√2/2", "√3/3"};
         int idx = random.nextInt(qArr.length);
         return new Question(qArr[idx], aArr[idx]);
     }
@@ -1404,7 +1551,15 @@ public class QuestionGenerator {
     // 九年级第二学期 (初中 / 苏科版)
     // ==========================================
     private Question genG9T2_1() { // 特殊角三角函数混合运算
-        return new Question("2sin30°＋tan45°＝", "2");
+        int type = random.nextInt(6);
+        return switch (type) {
+            case 0 -> new Question("2sin30°＋tan45°＝", "2");
+            case 1 -> new Question("2cos60°－1＝", "0");
+            case 2 -> new Question("tan45°＋cos60°＝", "3/2");
+            case 3 -> new Question("4sin30°－tan45°＝", "1");
+            case 4 -> new Question("√3tan30°＋1＝", "2");
+            default -> new Question("2sin30°×tan45°＝", "1");
+        };
     }
 
     private Question genG9T2_2() { // 二次函数顶点坐标口算
@@ -1414,7 +1569,27 @@ public class QuestionGenerator {
     }
 
     private Question genG9T2_3() { // 中考代数式计算综合
-        return new Question("sin²45°＋cos²45°＝", "1");
+        int type = random.nextInt(6);
+        return switch (type) {
+            case 0 -> {
+                int a = 1 + random.nextInt(5);
+                yield new Question("|-" + a + "|＋(π-1)⁰＝", String.valueOf(a + 1));
+            }
+            case 1 -> {
+                int a = 2 + random.nextInt(3);
+                yield new Question("√" + (a * a) + "＋(-1)⁰＝", String.valueOf(a + 1));
+            }
+            case 2 -> new Question("2⁻¹＋1/2＝", "1");
+            case 3 -> {
+                int a = 2 + random.nextInt(3);
+                yield new Question("(-" + a + ")²－√" + (a * a) + "＝", String.valueOf(a * a - a));
+            }
+            case 4 -> {
+                int a = 2 + random.nextInt(4);
+                yield new Question("(√" + a + ")²－2⁰＝", String.valueOf(a - 1));
+            }
+            default -> new Question("|-3|－(-2)＝", "5");
+        };
     }
 
     private Question genG9T2_4() { // 九年级下综合
